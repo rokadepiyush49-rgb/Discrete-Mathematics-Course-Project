@@ -141,9 +141,9 @@ def percolation_curve(graph: RoadGraph, runs: int = 40, seed: int = 3) -> dict:
     window = max(5, n // 100)
     smooth = np.convolve(curve, np.ones(window) / window, mode="same")
     critical = float(survival[int(np.argmax(np.gradient(smooth[window:-window]))) + window])
-    step = max(1, n // 100)
+    samples = sorted({*range(0, n, max(1, n // 100)), n})  # Keep the full network as an end point
     return {
-        "survival": [round(float(x), 4) for x in survival[::step]],
-        "largest_component": [round(float(x), 4) for x in curve[::step]],
+        "survival": [round(float(survival[i]), 4) for i in samples],
+        "largest_component": [round(float(curve[i]), 4) for i in samples],
         "critical_survival": critical,
     }

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import time
+from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -114,6 +115,51 @@ def _heal_row(result: HealResult, occlusion: OcclusionResult) -> dict:
     }
 
 
+def seed_sweep(truth: RoadGraph, seeds: range) -> dict:
+    """Repeat occlusion and healing across seeds, to show the results are not one lucky draw."""
+    rows = []
+    for seed in seeds:
+        occlusion = occlude(truth, seed=seed)
+        mst = heal(occlusion.graph, HealMode.MST)
+        full = heal(occlusion.graph, HealMode.MST_LOOPS)
+        mst_score = score_healing(mst, occlusion.gaps)
+        full_score = score_healing(full, occlusion.gaps)
+        bridges = cut_structure(mst.graph).bridges
+        rows.append(
+            {
+                "gaps": len(occlusion.gaps),
+                "fragments": full.components_before,
+                "mst_recall": mst_score.recall,
+                "full_recall": full_score.recall,
+                "full_precision": full_score.precision,
+                "components_after": full.components_after,
+                "kruskal_links": len(mst.mst_links),
+                "kruskal_bridges": sum(link in bridges for link in mst.mst_links),
+            }
+        )
+
+    def stats(key: str) -> dict:
+        values = np.array([row[key] for row in rows], dtype=float)
+        return {
+            "mean": float(values.mean()),
+            "sd": float(values.std(ddof=1)),
+            "min": float(values.min()),
+            "max": float(values.max()),
+        }
+
+    return {
+        "seeds": len(rows),
+        **{
+            key: stats(key)
+            for key in ("gaps", "fragments", "mst_recall", "full_recall", "full_precision")
+        },
+        "always_connected": all(row["components_after"] == 1 for row in rows),
+        "lemma_held_every_time": all(
+            row["kruskal_links"] == row["kruskal_bridges"] for row in rows
+        ),
+    }
+
+
 def _stranded(graph: RoadGraph, vertex: int) -> int:
     """How many junctions lose the main network if this one goes."""
     components = connected_components(graph, {vertex})
@@ -199,6 +245,9 @@ def analyse(scene: Scene, log=print) -> dict:
     predicted = percolation_estimate(truth.degree(v) for v in range(truth.n))
     simulated = percolation_curve(truth)
 
+    step("Repeating occlusion and healing across 20 seeds")
+    sweep = seed_sweep(truth, range(1, 21))
+
     step("Theorem audit")
     mst_cuts = cut_structure(scene.mst.graph)
     audit = theorem_audit(
@@ -218,6 +267,7 @@ def analyse(scene: Scene, log=print) -> dict:
             "km": sum(r.length for r in truth.roads) / 1000,
             "bridges": sum(r.bridge for r in truth.roads),
             "dead_ends": sum(truth.degree(v) == 1 for v in range(truth.n)),
+            "degree_counts": dict(sorted(Counter(map(truth.degree, range(truth.n))).items())),
         },
         "occlusion": {
             "gaps": len(occlusion.gaps),
@@ -237,6 +287,7 @@ def analyse(scene: Scene, log=print) -> dict:
             "mst": _heal_row(scene.mst, occlusion),
             "mst_loops": _heal_row(scene.healed, occlusion),
             "candidates": scene.healed.candidates_considered,
+            "sweep": sweep,
         },
         "criticality": {
             "cut_vertices": len(real_cuts),
