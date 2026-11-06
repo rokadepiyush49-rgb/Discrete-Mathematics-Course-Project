@@ -1,0 +1,46 @@
+[project]
+name = "route-resilience"
+version = "1.0.0"
+description = "Graph-theoretic healing and criticality analysis of a real city road network"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.120",
+    "networkx>=3.5",
+    "numpy>=2.3",
+    "scipy>=1.16",
+    "uvicorn[standard]>=0.38",
+]
+
+[project.scripts]
+route-resilience = "route_resilience.cli:main"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28",
+    "hypothesis>=6.140",
+    "pytest>=9.0",
+    "ruff>=0.14",
+]
+# Only needed to regenerate data/pune_core.json.gz from a raw .osm.pbf file.
+data = ["osmium>=4.1"]
+
+[build-system]
+requires = ["uv_build>=0.9,<1"]
+build-backend = "uv_build"
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "PERF", "RUF"]
+# Maths notation: single-letter names and Greek letters are deliberate here.
+ignore = ["E741", "RUF001", "RUF002", "RUF003"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
