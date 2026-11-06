@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Table } from "./ui";
 
 export type Series = { key: string; label: string; color: string; values: [number, number][] };
@@ -37,9 +37,10 @@ export function LineChart({
   const [cursor, setCursor] = useState<number | null>(null);
   const [showTable, setShowTable] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const node = frame.current;
     if (!node) return;
+    setWidth(node.clientWidth); // Measure before first paint, so the chart never overflows.
     const observer = new ResizeObserver(([entry]) => {
       if (entry) setWidth(entry.contentRect.width);
     });
