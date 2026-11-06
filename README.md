@@ -39,7 +39,7 @@ npm --prefix web run build
 uv run route-resilience serve
 ```
 
-Then open <http://127.0.0.1:8000>. The first start runs the full analysis, which takes about 90 seconds. Later starts take a few seconds.
+Then open <http://127.0.0.1:8000>. The first start runs the full analysis, which takes 1 to 3 minutes. Later starts take a few seconds.
 
 Other useful commands:
 
