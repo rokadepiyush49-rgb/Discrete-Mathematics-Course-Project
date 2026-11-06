@@ -3,8 +3,10 @@
 Two passes run over the same candidate links.
 
 Pass 1 is Kruskal's algorithm, with a Disjoint Set seeded from the fragmented graph. It adds a
-link only if the link joins two different components, which yields a minimum spanning forest of
-the contracted graph and connects everything it can at least cost.
+link only if the link joins two different components. Each dangling end may also be used only
+once, since a road continues in one direction. Without that rule the result would be exactly a
+minimum spanning forest of the contracted graph. With it, the result is a greedy forest, because
+degree-constrained spanning trees are NP-hard in general. Lemma 3 holds either way.
 
 Pass 1 has a built-in weakness (Lemma 3 in the report): every link it adds is a bridge, because
 it never closes a cycle. A real road gap often *does* close a cycle. Pass 2 therefore restores
